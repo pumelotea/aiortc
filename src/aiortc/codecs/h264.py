@@ -122,7 +122,8 @@ class H264Decoder(Decoder):
 
 
 class H264Encoder(Encoder):
-    def __init__(self) -> None:
+    def __init__(self, encoder_name) -> None:
+        self.encoder_name = encoder_name
         self.buffer_data = b""
         self.buffer_pts: Optional[int] = None
         self.codec: Optional[VideoCodecContext] = None
@@ -267,17 +268,18 @@ class H264Encoder(Encoder):
             frame.pict_type = av.video.frame.PictureType.NONE
 
         if self.codec is None:
-            self.codec = av.CodecContext.create("libx264", "w")
+            self.codec = av.CodecContext.create(self.encoder_name, "w")
             self.codec.width = frame.width
             self.codec.height = frame.height
             self.codec.bit_rate = self.target_bitrate
             self.codec.pix_fmt = "yuv420p"
             self.codec.framerate = fractions.Fraction(MAX_FRAME_RATE, 1)
             self.codec.time_base = fractions.Fraction(1, MAX_FRAME_RATE)
-            self.codec.options = {
-                "level": "31",
-                "tune": "zerolatency",
-            }
+            if "libx264" == self.encoder_name:
+                self.codec.options = {
+                    "level": "31",
+                    "tune": "zerolatency",
+                }
             self.codec.profile = "Baseline"
 
         data_to_send = b""

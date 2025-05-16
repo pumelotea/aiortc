@@ -155,7 +155,7 @@ def get_decoder(codec: RTCRtpCodecParameters) -> Decoder:
         raise ValueError(f"No decoder found for MIME type `{mimeType}`")
 
 
-def get_encoder(codec: RTCRtpCodecParameters) -> Encoder:
+def get_encoder(codec: RTCRtpCodecParameters, encoder_name) -> Encoder:
     mimeType = codec.mimeType.lower()
 
     if mimeType == "audio/opus":
@@ -165,7 +165,7 @@ def get_encoder(codec: RTCRtpCodecParameters) -> Encoder:
     elif mimeType == "audio/pcmu":
         return PcmuEncoder()
     elif mimeType == "video/h264":
-        return H264Encoder()
+        return H264Encoder(encoder_name)
     elif mimeType == "video/vp8":
         return Vp8Encoder()
     else:

@@ -101,6 +101,8 @@ class RTCRtpSender:
         self._stream_id = str(uuid.uuid4())
         self._enabled = True
         self.__encoder: Optional[Encoder] = None
+        # 编码器名称
+        self.__encoder_name: Optional[str] = None
         self.__force_keyframe = False
         self.__loop = asyncio.get_event_loop()
         self.__mid: Optional[str] = None
@@ -152,6 +154,9 @@ class RTCRtpSender:
         transmitted.
         """
         return self.__transport
+
+    def setEncoder(self, encoder_name):
+        self.__encoder_name = encoder_name
 
     @classmethod
     def getCapabilities(self, kind: str) -> RTCRtpCapabilities:
@@ -302,7 +307,9 @@ class RTCRtpSender:
         audio_level = None
 
         if self.__encoder is None:
-            self.__encoder = get_encoder(codec)
+            if self.__encoder_name is None:
+                self.__encoder_name = "libx264"
+            self.__encoder = get_encoder(codec, self.__encoder_name)
 
         if isinstance(data, Frame):
             # Encode the frame.
