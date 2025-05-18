@@ -127,7 +127,6 @@ class H264Encoder(Encoder):
         self.buffer_data = b""
         self.buffer_pts: Optional[int] = None
         self.codec: Optional[VideoCodecContext] = None
-        self.codec_buffering = False
         self.__target_bitrate = DEFAULT_BITRATE
 
     @staticmethod
@@ -281,24 +280,12 @@ class H264Encoder(Encoder):
                     "level": "31",
                     "tune": "zerolatency",
                 }
-            if "h264_nvenc" == self.encoder_name:
-                self.codec_buffering = True
             self.codec.profile = "Baseline"
 
         data_to_send = b""
         for package in self.codec.encode(frame):
-            package_bytes = bytes(package)
-            if self.codec_buffering:
-                # delay sending to ensure we accumulate all packages
-                # for a given PTS
-                if package.pts == self.buffer_pts:
-                    self.buffer_data += package_bytes
-                else:
-                    data_to_send += self.buffer_data
-                    self.buffer_data = package_bytes
-                    self.buffer_pts = package.pts
-            else:
-                data_to_send += package_bytes
+            data_to_send += bytes(package)
+
         if data_to_send:
             yield from self._split_bitstream(data_to_send)
 
