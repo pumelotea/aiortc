@@ -376,7 +376,7 @@ class RTCRtpSender:
                     continue
 
                 timestamp = uint32_add(timestamp_origin, enc_frame.timestamp)
-
+                print(f"DEBUG RTP send, {timestamp}")
                 for i, payload in enumerate(enc_frame.payloads):
                     packet = RtpPacket(
                         payload_type=codec.payloadType,
