@@ -301,6 +301,7 @@ class H264Encoder(Encoder):
         assert isinstance(packet, av.Packet)
         packages = self._split_bitstream(bytes(packet))
         timestamp = convert_timebase(packet.pts, packet.time_base, VIDEO_TIME_BASE)
+        print(timestamp)
         return self._packetize(packages), timestamp
 
     @property
