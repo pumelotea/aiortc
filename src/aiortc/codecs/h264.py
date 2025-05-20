@@ -281,6 +281,12 @@ class H264Encoder(Encoder):
                     "tune": "zerolatency",
                 }
             self.codec.profile = "Baseline"
+            if "h264_nvenc" == self.encoder_name:
+                self.codec.options = {
+                    "preset": "fast",
+                    "rc": "vbr",
+                }
+                self.codec.profile = "baseline"
 
         data_to_send = b""
         for package in self.codec.encode(frame):
