@@ -27,7 +27,6 @@ classifiers = [
 dependencies = [
     "aioice>=0.10.1,<1.0.0",
     "av>=14.0.0,<15.0.0",
-    "cffi>=1.0.0",
     "cryptography>=44.0.0",
     "google-crc32c>=1.1",
     "pyee>=13.0.0",
@@ -59,7 +58,6 @@ disallow_untyped_calls = true
 disallow_untyped_decorators = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
-mypy_path = "stubs"
 strict_optional = false
 warn_redundant_casts = true
 warn_unused_ignores = true
@@ -79,5 +77,4 @@ known-third-party = ["aiortc"]
 version = {attr = "aiortc.__version__"}
 
 [tool.setuptools.packages.find]
-exclude = ["_cffi_src"]
 where = ["src"]

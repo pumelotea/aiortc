@@ -576,6 +576,39 @@ class RTCPeerConnectionTest(TestCase):
         aioice.stun.RETRY_RTO = self.retry_rto
 
     @asynctest
+    async def test_addIceCandidate(self) -> None:
+        pc = RTCPeerConnection()
+        pc.createDataChannel("test")
+        offer = await pc.createOffer()
+        await pc.setRemoteDescription(offer)
+        self.assertFalse("a=candidate:" in pc.remoteDescription.sdp)
+        candidate_with_index = RTCIceCandidate(
+            component=1,
+            foundation="0",
+            ip="192.168.99.7",
+            port=33543,
+            priority=2122252543,
+            protocol="UDP",
+            type="host",
+            sdpMLineIndex=0,
+        )
+        await pc.addIceCandidate(candidate_with_index)
+        self.assertTrue("a=candidate:" in pc.remoteDescription.sdp)
+
+        candidate_with_mid = RTCIceCandidate(
+            component=1,
+            foundation="0",
+            ip="192.168.99.7",
+            port=33544,
+            priority=2122252543,
+            protocol="UDP",
+            type="host",
+            sdpMid=pc.sctp.mid,
+        )
+        await pc.addIceCandidate(candidate_with_mid)
+        self.assertEqual(pc.remoteDescription.sdp.count("a=candidate:"), 2)
+
+    @asynctest
     async def test_addIceCandidate_no_sdpMid_or_sdpMLineIndex(self) -> None:
         pc = RTCPeerConnection()
         with self.assertRaises(ValueError) as cm:
@@ -593,6 +626,18 @@ class RTCPeerConnectionTest(TestCase):
         self.assertEqual(
             str(cm.exception), "Candidate must have either sdpMid or sdpMLineIndex"
         )
+
+    @asynctest
+    async def test_addIceCandidate_null(self) -> None:
+        pc = RTCPeerConnection()
+        pc.createDataChannel("test")
+        pc.addTransceiver("audio")
+        pc.addTransceiver("video")
+        offer = await pc.createOffer()
+        await pc.setRemoteDescription(offer)
+        self.assertFalse("a=end-of-candidates" in pc.remoteDescription.sdp)
+        await pc.addIceCandidate(None)
+        self.assertTrue("a=end-of-candidates" in pc.remoteDescription.sdp)
 
     @asynctest
     async def test_addTrack_audio(self) -> None:
@@ -825,6 +870,7 @@ class RTCPeerConnectionTest(TestCase):
         self.assertTrue(
             lf2crlf(
                 """a=rtpmap:96 opus/48000/2
+a=rtpmap:9 G722/8000
 a=rtpmap:0 PCMU/8000
 a=rtpmap:8 PCMA/8000
 """
@@ -863,6 +909,7 @@ a=rtpmap:8 PCMA/8000
         self.assertTrue(
             lf2crlf(
                 """a=rtpmap:96 opus/48000/2
+a=rtpmap:9 G722/8000
 a=rtpmap:0 PCMU/8000
 a=rtpmap:8 PCMA/8000
 """
@@ -4636,16 +4683,37 @@ a=rtpmap:0 PCMU/8000
 
     @asynctest
     async def test_createOffer_without_media(self) -> None:
-        pc = RTCPeerConnection()
-        with self.assertRaises(InternalError) as cm:
-            await pc.createOffer()
-        self.assertEqual(
-            str(cm.exception),
-            "Cannot create an offer with no media and no data channels",
-        )
+        pc1 = RTCPeerConnection()
+        pc2 = RTCPeerConnection()
 
-        # close
+        offer = await pc1.createOffer()
+        await pc1.setLocalDescription(offer)
+        await pc2.setRemoteDescription(offer)
+
+        answer = await pc2.createAnswer()
+        await pc2.setLocalDescription(answer)
+        await pc1.setRemoteDescription(answer)
+
+        await pc1.close()
+        await pc2.close()
+
+    @asynctest
+    async def test_setLocalDescription_implicit(self) -> None:
+        pc = RTCPeerConnection()
+        pc.addTrack(AudioStreamTrack())
+        offer = await pc.createOffer()
+        await pc.setRemoteDescription(offer)
+
+        await pc.setLocalDescription()
+        self.assertEqual(pc.localDescription.type, "answer")
+
+        await pc.setLocalDescription()
+        self.assertEqual(pc.localDescription.type, "offer")
+
         await pc.close()
+        with self.assertRaises(InvalidStateError) as cm:
+            await pc.setLocalDescription()
+        self.assertEqual(str(cm.exception), "RTCPeerConnection is closed")
 
     @asynctest
     async def test_setLocalDescription_unexpected_answer(self) -> None:
